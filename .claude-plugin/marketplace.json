@@ -1,0 +1,14 @@
+{
+  "name": "mano-derecha",
+  "description": "Plugins de la clase Mano Derecha.",
+  "owner": {
+    "name": "Mano Derecha"
+  },
+  "plugins": [
+    {
+      "name": "voz-natural",
+      "source": "./plugins/voz-natural",
+      "description": "Tu mano derecha te habla: dile «usa el modo voz» y te cuenta en voz el resumen de lo que te escribe, con la voz de tu Mac."
+    }
+  ]
+}

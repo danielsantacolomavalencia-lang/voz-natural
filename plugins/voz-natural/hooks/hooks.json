@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "/bin/bash \"${CLAUDE_PLUGIN_ROOT}/bin/voz-natural-decir\" recordatorio", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}

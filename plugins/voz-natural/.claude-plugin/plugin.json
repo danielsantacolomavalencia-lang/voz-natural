@@ -1,0 +1,18 @@
+{
+  "name": "voz-natural",
+  "displayName": "Voz natural",
+  "version": "1.0.0",
+  "description": "Tu mano derecha te habla: dile «usa el modo voz» y te cuenta en voz, como un colega, el resumen de lo que te escribe, con la voz de tu Mac. Lo escrito queda igual.",
+  "author": {
+    "name": "Mano Derecha"
+  },
+  "license": "MIT",
+  "keywords": [
+    "voz",
+    "texto a voz",
+    "narración",
+    "español",
+    "mac"
+  ],
+  "repository": "https://github.com/danielsantacolomavalencia-lang/voz-natural"
+}
