@@ -42,7 +42,7 @@ cada paso en una frase:
 | Se instaló | Escribe `/voz-natural:probar` en una conversación nueva | Que la mano derecha revise el paso 2 |
 | Suena | `/voz-natural:probar` dice una frase | Paso 4 (voces en español) y el volumen |
 | No pide permiso | «usa el modo voz» y dos o tres preguntas seguidas | Paso 3 (el permiso) |
-| Esc la calla | Presiona Esc mientras habla | Anotar qué pasó para el Cirujano |
+| Esc la calla | Presiona Esc mientras habla | Anotar qué pasó para revisarlo |
 | Un mensaje nuevo la calla | Escríbele mientras habla | Anotar qué pasó |
 | Velocidad | «velocidad 1.2x» | Anotar qué pasó |
 
