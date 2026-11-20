@@ -22,7 +22,9 @@ allowed-tools: Bash(voz-natural-decir *)
    - Un nombre de voz (como `Paulina (Mejorada)`): `voz-natural-decir elegir "<nombre exacto de la lista>"`
    - `velocidad <número>` (entre 150 y 230; 185 es lo normal): `voz-natural-decir velocidad <número>`
 
-4. Si la lista no tiene ninguna voz «mejorada», «Enhanced» o «Premium», explícale cómo bajar una gratis (suena mucho
-   más natural): Ajustes del Sistema › Accesibilidad › Lectura y voz (en versiones anteriores, «Contenido leído») ›
-   botón ⓘ junto a «Voz del sistema» › Voz › buscar «Paulina» › la nube junto a «Paulina (mejorada)». Al terminar la
-   descarga, el plugin la elige solo (si no eligió otra a mano).
+4. Si no hay voces buenas en español, explícale cómo bajarlas (gratis):
+   - **Mac:** la mejor es Siri: Ajustes del Sistema › Accesibilidad › Lectura y voz (en versiones anteriores,
+     «Contenido leído») › Voz del sistema › Siri. Otra opción: botón ⓘ junto a «Voz del sistema» › Voz › buscar
+     «Paulina» › la nube junto a «Paulina (mejorada)».
+   - **Windows:** Configuración › Hora e idioma › Voz › Administrar voces › Agregar voces › Español (México).
+   Al terminar la descarga, el plugin la elige solo (si no eligió otra a mano).

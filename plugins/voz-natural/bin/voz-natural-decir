@@ -1,17 +1,19 @@
 #!/bin/bash
-# Voz natural (Mac): la voz de tu mano derecha, con la voz que ya trae tu Mac (orden `say`).
+# Voz natural: la voz de tu mano derecha, con la voz que ya trae tu computadora.
+#   - Mac: la orden `say` (y Siri, si es la voz del sistema).
+#   - Windows (EN PRUEBA): las voces de Windows por PowerShell (System.Speech), dentro de Git Bash.
 # Vive en `bin/` del plugin: mientras el plugin está encendido, Claude la corre como `voz-natural-decir` (y un solo
 # permiso, `Bash(voz-natural-decir *)`, evita que pida permiso cada vez que habla).
 #
 #   voz-natural-decir 'frase'                      dice la frase y ESPERA a que termine (lo que oyes y lo que ves van juntos)
 #   voz-natural-decir encender | apagar            el modo voz de la skill (para el recordatorio invisible de cada mensaje)
-#   voz-natural-decir probar | voces               prueba la voz y muestra las voces en español de esta Mac
-#   voz-natural-decir elegir 'Nombre de la voz'    usar otra voz
-#   voz-natural-decir velocidad 200                palabras por minuto (150 a 230; 185 es lo normal)
+#   voz-natural-decir probar | voces               prueba la voz y muestra las voces en español
+#   voz-natural-decir elegir 'Nombre de la voz'    usar otra voz («siri», «auto» o un nombre a medias)
+#   voz-natural-decir velocidad 1.2x               velocidad (1x es lo normal; también palabras por minuto, 185 = 1x)
 #   voz-natural-decir recordatorio                 (gancho UserPromptSubmit) calla la voz anterior y, con el modo voz
-#                                          encendido, le recuerda a Claude que siga hablando
+#                                                  encendido, le recuerda a Claude que siga hablando
 #
-# Solo usa lo que ya trae cualquier Mac: bash, say, awk, sed. No instala nada ni manda nada a internet.
+# Solo usa lo que ya trae la computadora. No instala nada ni manda nada a internet.
 
 set -u
 # Siempre la misma carpeta (el gancho y la orden la comparten): tu voz y tu velocidad se quedan aquí para siempre.
@@ -25,24 +27,43 @@ ESTADO="apagado"; VOZ=""; VELOCIDAD="185"
 [ -f "$CONF" ] && . "$CONF"
 guardar() { printf 'ESTADO=%q\nVOZ=%q\nVELOCIDAD=%q\n' "$ESTADO" "$VOZ" "$VELOCIDAD" > "$CONF"; }
 
-# La mejor voz en español de esta Mac: Premium > Mejorada (Enhanced) > Paulina > Mónica > otra. Sin las voces «de
-# juguete» (Eddy, Flo, Grandma…), que suenan robóticas.
-mejor_voz() {
-  say -v '?' 2>/dev/null | awk '
-    { loc=""; for (i=1;i<=NF;i++) if ($i ~ /^[a-z][a-z]_[A-Z][A-Z]$/) { loc=$i; break } }
-    loc !~ /^es_/ { next }
-    { nombre=$0; sub(/[ ]+[a-z][a-z]_[A-Z][A-Z].*$/, "", nombre) }
-    nombre ~ /^(Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley)/ { next }
-    { p=100
-      if (nombre ~ /Premium/) p=400; else if (nombre ~ /(Enhanced|Mejorada|mejorada)/) p=300
-      if (loc=="es_MX") p+=30; else if (loc=="es_US") p+=20; else if (loc=="es_ES") p+=10
-      if (nombre ~ /^Paulina/) p+=5; else if (nombre ~ /^M[oó]nica/) p+=4
-      print p "\t" nombre }' | sort -t$'\t' -k1,1nr | head -1 | cut -f2
+case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) WINDOWS=1; EQUIPO="computadora" ;; *) WINDOWS=0; EQUIPO="Mac" ;; esac
+
+# ── Windows: las voces de Windows por PowerShell ─────────────────────────────────────────────────────────────────────
+PS_VOCES='[Console]::OutputEncoding=[Text.Encoding]::UTF8; Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).GetInstalledVoices() | Where-Object { $_.Enabled } | ForEach-Object { $_.VoiceInfo.Culture.Name + "`t" + $_.VoiceInfo.Name }'
+PS_HABLAR='Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; if ($env:VOZ_NOMBRE) { try { $s.SelectVoice($env:VOZ_NOMBRE) } catch {} }; $s.Rate = [int]$env:VOZ_RATE; $s.Speak([IO.File]::ReadAllText($env:VOZ_ARCHIVO, [Text.Encoding]::UTF8))'
+powershell_() { powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$1"; }
+
+# Las voces en español, una por línea: «es_MX<TAB>Nombre». Sin las voces «de juguete» de la Mac (Eddy, Flo, Grandma…).
+lista_voces() {
+  if [ "$WINDOWS" = 1 ]; then
+    powershell_ "$PS_VOCES" 2>/dev/null | tr -d '\r' | awk -F'\t' '$1 ~ /^es-/ { sub(/-/, "_", $1); print $1 "\t" $2 }'
+  else
+    say -v '?' 2>/dev/null | awk '
+      { loc=""; for (i=1;i<=NF;i++) if ($i ~ /^[a-z][a-z]_[A-Z][A-Z]$/) { loc=$i; break } }
+      loc !~ /^es_/ { next }
+      { n=$0; sub(/[ ]+[a-z][a-z]_[A-Z][A-Z].*$/, "", n) }
+      n ~ /^(Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley)/ { next }
+      !vista[loc "\t" n]++ { print loc "\t" n }'
+  fi
 }
+# Puntaje de cada voz: Premium > Mejorada (Enhanced) > el resto; México > EE. UU. > España; Paulina, Mónica, Sabina.
+puntuar() {
+  awk -F'\t' '{ n=$2; p=100
+    if (n ~ /Premium/) p=400; else if (n ~ /(Enhanced|Mejorada|mejorada|Natural)/) p=300
+    if ($1=="es_MX") p+=30; else if ($1=="es_US") p+=20; else if ($1=="es_ES") p+=10
+    if (n ~ /(Paulina|Sabina)/) p+=5; else if (n ~ /M[oó]nica|Helena/) p+=4
+    print p "\t" n }' | sort -t$'\t' -k1,1nr
+}
+mejor_voz() { lista_voces | puntuar | head -1 | cut -f2; }
+voz_existe() { lista_voces | cut -f2 | grep -qxF "$1"; }
+
+# ── Mac: Siri ───────────────────────────────────────────────────────────────────────────────────────────────────────
 # Las voces de Siri (las más naturales de la Mac) no se pueden pedir por nombre: `say` solo las usa cuando son la «voz
 # del sistema» (Ajustes › Accesibilidad › Lectura y voz › Voz del sistema) y no se le dice qué voz usar. Aquí se mira
-# si la voz del sistema para español es de Siri; devuelve su nombre («Carmen») o nada.
+# si la voz del sistema para español es de Siri; devuelve su nombre («Carmen») o nada. En Windows, nada.
 siri_del_sistema() {
+  [ "$WINDOWS" = 1 ] && return 0
   defaults read com.apple.Accessibility SpokenContentDefaultVoiceSelectionsByLanguage 2>/dev/null | awk '
     /boundLanguage *= *"?es/ { es=1 }
     /voiceId *= *"com\.apple\.siri\./ { id=$0 }
@@ -50,47 +71,66 @@ siri_del_sistema() {
 }
 SISTEMA="sistema"   # valor de VOZ: «la voz del sistema» (Siri)
 
-# La voz que eligió el usuario se queda para siempre (archivo `config` en la carpeta de datos del plugin, que sobrevive a
-# las actualizaciones). Si esa voz ya no está en la Mac (la borró), se usa la mejor que haya, sin perder su elección.
-# Sin elección, gana Siri si es la voz del sistema; si no, la mejor de la lista.
+# La voz que eligió el usuario se queda para siempre (archivo `config`). Si esa voz ya no está (la borró), se usa la
+# mejor que haya, sin perder su elección. Sin elección, gana Siri si es la voz del sistema; si no, la mejor de la lista.
 voz_actual() {
   if [ "$VOZ" = "$SISTEMA" ] && [ -n "$(siri_del_sistema)" ]; then echo "$SISTEMA"
-  elif [ -n "$VOZ" ] && [ "$VOZ" != "$SISTEMA" ] && say -v '?' 2>/dev/null | grep -qF "$VOZ "; then echo "$VOZ"
+  elif [ -n "$VOZ" ] && [ "$VOZ" != "$SISTEMA" ] && voz_existe "$VOZ"; then echo "$VOZ"
   elif [ -n "$(siri_del_sistema)" ]; then echo "$SISTEMA"
   else mejor_voz; fi
 }
 nombre_voz() { if [ "$1" = "$SISTEMA" ]; then echo "Siri ($(siri_del_sistema)), la voz del sistema"; else echo "${1:-la voz del sistema}"; fi; }
 quien_eligio() {
-  if [ -z "$VOZ" ]; then echo "elegida automáticamente: la mejor de tu Mac"
+  if [ -z "$VOZ" ]; then echo "elegida automáticamente: la mejor de tu $EQUIPO"
   elif [ "$(voz_actual)" = "$VOZ" ]; then echo "la que elegiste"
   elif [ "$VOZ" = "$SISTEMA" ]; then echo "elegiste Siri, pero la voz del sistema ya no es de Siri: uso la mejor que hay"
-  else echo "tu voz elegida, $VOZ, ya no está en la Mac: uso la mejor que hay"; fi
+  else echo "tu voz elegida, $VOZ, ya no está en la $EQUIPO: uso la mejor que hay"; fi
+}
+como_bajar_voces() {
+  if [ "$WINDOWS" = 1 ]; then echo "Para agregar una voz en español: Configuración › Hora e idioma › Voz › Administrar voces › Agregar voces › Español (México)."
+  else echo "Para la mejor voz: Ajustes del Sistema › Accesibilidad › Lectura y voz › Voz del sistema › Siri."; fi
 }
 
-callar() { if [ -f "$PID" ]; then local p; p="$(cat "$PID")"; rm -f "$PID"; kill "$p" 2>/dev/null; fi; }  # primero se borra la marca: así la orden sabe que la callaron a propósito
+matar() { # detiene el proceso de la voz (en Windows, también el PowerShell de fondo)
+  kill "$1" 2>/dev/null
+  [ "$WINDOWS" = 1 ] && /usr/bin/kill -f "$1" 2>/dev/null
+  return 0
+}
+callar() { if [ -f "$PID" ]; then local p; p="$(cat "$PID")"; rm -f "$PID"; matar "$p"; fi; }  # primero se borra la marca: así la orden sabe que la callaron a propósito
 
 hablar() { # $1 = frase; espera a que termine
-  local frase="$1" voz
+  local frase="$1" voz archivo=""
   [ -z "$frase" ] && return 0
   voz="$(voz_actual)"
   echo "$(date '+%Y-%m-%d %H:%M:%S') · ${#frase} letras · $(nombre_voz "$voz")" >> "$DATA/voz.log" 2>/dev/null
   callar
-  if [ -n "$voz" ] && [ "$voz" != "$SISTEMA" ]; then say -v "$voz" -r "$VELOCIDAD" "$frase" & else say -r "$VELOCIDAD" "$frase" & fi
+  if [ "$WINDOWS" = 1 ]; then
+    # La frase va en un archivo (así PowerShell no toca comillas ni acentos). Velocidad: 1x = 0; 1.2x = 2 (de -10 a 10).
+    archivo="$(mktemp 2>/dev/null || echo "$DATA/frase.txt")"
+    printf '%s' "$frase" > "$archivo"
+    VOZ_NOMBRE="$voz" VOZ_ARCHIVO="$(cygpath -w "$archivo" 2>/dev/null || echo "$archivo")" \
+      VOZ_RATE="$(awk -v v="$VELOCIDAD" 'BEGIN { r=int((v/185-1)*10 + (v>=185 ? 0.5 : -0.5)); if (r<-10) r=-10; if (r>10) r=10; print r }')" \
+      powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$PS_HABLAR" &   # directo (no por función): así el número es el de PowerShell y Esc lo detiene
+  elif [ -n "$voz" ] && [ "$voz" != "$SISTEMA" ]; then say -v "$voz" -r "$VELOCIDAD" "$frase" &
+  else say -r "$VELOCIDAD" "$frase" &
+  fi
   local pid=$!
   echo "$pid" > "$PID"
-  # Esc en Claude Code corta esta orden: la voz se calla con ella (sin esto, `say` seguiría hablando sola).
-  trap 'kill "$pid" 2>/dev/null; rm -f "$PID"; exit 130' INT TERM HUP
+  # Esc en Claude Code corta esta orden: la voz se calla con ella (sin esto, seguiría hablando sola).
+  trap 'matar "$pid"; rm -f "$PID" "$archivo"; exit 130' INT TERM HUP
   # Y si la cortan de golpe (sin dejarla limpiar), un vigía calla la voz en cuanto esta orden desaparece.
-  ( yo=$$; while kill -0 "$yo" 2>/dev/null && kill -0 "$pid" 2>/dev/null; do sleep 0.2; done; kill "$pid" 2>/dev/null ) &
-  if wait "$pid"; then trap - INT TERM HUP; rm -f "$PID"; return 0; fi
+  ( yo=$$; while kill -0 "$yo" 2>/dev/null && kill -0 "$pid" 2>/dev/null; do sleep 0.2; done; matar "$pid" ) &
+  if wait "$pid"; then trap - INT TERM HUP; rm -f "$PID" "$archivo"; return 0; fi
   trap - INT TERM HUP
+  [ -n "$archivo" ] && rm -f "$archivo"
   if [ ! -f "$PID" ]; then echo "(callada: el usuario siguió hablando)"; return 0; fi   # la calló un mensaje nuevo
   rm -f "$PID"
-  echo "SIN VOZ: la Mac no pudo decir la frase (revisa el volumen o prueba con /voz-natural:probar)." >&2
+  echo "SIN VOZ: la $EQUIPO no pudo decir la frase (revisa el volumen o prueba con /voz-natural:probar)." >&2
   return 1
 }
 
 RECORDATORIO="[Modo voz encendido] Sigue la skill voz-natural:modo-voz en esta respuesta: tu respuesta escrita queda igual que siempre y, justo antes de tu mensaje final, le cuentas en voz el resumen con voz-natural-decir 'frase', como un colega (qué hiciste y dónde quedó, lo importante sin omitir, y lo que necesitas de él). Si te pide apagarlo, apágalo con voz-natural-decir apagar."
+x_vel() { awk -v v="$VELOCIDAD" 'BEGIN { printf "%.2fx", v/185 }'; }
 
 case "${1:-}" in
   recordatorio)
@@ -98,18 +138,23 @@ case "${1:-}" in
     callar                                        # si le estabas hablando, se calla: ya te está respondiendo
     [ "$ESTADO" = "encendido" ] && echo "$RECORDATORIO"
     exit 0 ;;
-  encender) ESTADO="encendido"; guardar; echo "Modo voz encendido. Voz: $(nombre_voz "$(voz_actual)") ($(quien_eligio)) · velocidad: $(awk -v v="$VELOCIDAD" 'BEGIN { printf "%.2fx", v/185 }')" ;;
+  encender) ESTADO="encendido"; guardar; echo "Modo voz encendido. Voz: $(nombre_voz "$(voz_actual)") ($(quien_eligio)) · velocidad: $(x_vel)" ;;
   apagar)   ESTADO="apagado"; guardar; callar; echo "Modo voz apagado. Lo escrito sigue igual." ;;
   probar)
     v="$(voz_actual)"
-    echo "Voz: $(nombre_voz "$v") ($(quien_eligio)) · velocidad: $(awk -v v="$VELOCIDAD" 'BEGIN { printf "%.2fx", v/185 }') · modo voz: $ESTADO"
+    echo "Voz: $(nombre_voz "$v") ($(quien_eligio)) · velocidad: $(x_vel) · modo voz: $ESTADO"
+    [ -z "$v" ] && [ -z "$(siri_del_sistema)" ] && echo "No encontré voces en español. $(como_bajar_voces)"
     hablar "Hola, soy tu mano derecha. Así te voy a contar lo que hago, para que casi no tengas que leer." ;;
   voces)
-    echo "Voces en español de esta Mac:"
-    say -v '?' | awk '{ for (i=1;i<=NF;i++) if ($i ~ /^es_/) { print; break } }' | grep -vE '^(Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley) '
-    s="$(siri_del_sistema)"
-    if [ -n "$s" ]; then echo "Siri: «$s» es la voz del sistema (la más natural). Se pide con «usa la voz de Siri»."
-    else echo "Siri: no es la voz del sistema. Para usarla: Ajustes › Accesibilidad › Lectura y voz › Voz del sistema › Siri."; fi
+    echo "Voces en español de esta $EQUIPO (la mejor primero):"
+    lista_voces | puntuar | cut -f2 | sed 's/^/  - /'
+    if [ "$WINDOWS" = 0 ]; then
+      s="$(siri_del_sistema)"
+      if [ -n "$s" ]; then echo "Siri: «$s» es la voz del sistema (la más natural). Se pide con «usa la voz de Siri»."
+      else echo "Siri: no es la voz del sistema. $(como_bajar_voces)"; fi
+    else
+      [ -z "$(lista_voces)" ] && como_bajar_voces
+    fi
     echo "Elegida: $(nombre_voz "$(voz_actual)")" ;;
   elegir)
     # Acepta el nombre a medias («mónica», «paulina mejorada»): se queda con la mejor voz en español que lo contenga.
@@ -118,20 +163,18 @@ case "${1:-}" in
     case "$(printf '%s' "$pedido" | tr '[:upper:]' '[:lower:]')" in ""|auto|automatica|automática) VOZ="" ;;
       siri|*siri*|"voz del sistema"|sistema)
         if [ -z "$(siri_del_sistema)" ]; then
-          echo "La voz de Siri todavía no es la voz del sistema. Ajustes del Sistema › Accesibilidad › Lectura y voz › Voz del sistema › elige una de Siri (descárgala si hace falta) y vuelve a pedírmelo."; exit 1
+          if [ "$WINDOWS" = 1 ]; then echo "Siri solo existe en la Mac. En Windows uso las voces de Windows: pídeme «elige tú la mejor»."
+          else echo "La voz de Siri todavía no es la voz del sistema. Ajustes del Sistema › Accesibilidad › Lectura y voz › Voz del sistema › elige una de Siri (descárgala si hace falta) y vuelve a pedírmelo."; fi
+          exit 1
         fi
         VOZ="$SISTEMA" ;;
       *)
-        VOZ="$(say -v '?' | awk '{ for (i=1;i<=NF;i++) if ($i ~ /^es_/) { loc=$i; n=$0; sub(/[ ]+[a-z][a-z]_[A-Z][A-Z].*$/, "", n); print loc "\t" n; break } }' |
-          awk -F'\t' -v q="$pedido" 'function plano(t) { t=tolower(t); gsub(/[()]/, "", t)
+        VOZ="$(lista_voces | awk -F'\t' -v q="$pedido" 'function plano(t) { t=tolower(t); gsub(/[()]/, "", t)
               gsub(/á|Á/, "a", t); gsub(/é|É/, "e", t); gsub(/í|Í/, "i", t); gsub(/ó|Ó/, "o", t); gsub(/ú|Ú|ü/, "u", t)
               gsub(/ñ|Ñ/, "n", t); return t }
             BEGIN { q=plano(q); nq=split(q, w, / +/) }
             { n=plano($2); ok=1; for (i=1;i<=nq;i++) if (index(n, w[i])==0) ok=0
-              if (!ok) next
-              p=100; if (n ~ /premium/) p=400; else if (n ~ /mejorada|enhanced/) p=300
-              if ($1=="es_MX") p+=30; else if ($1=="es_US") p+=20; else if ($1=="es_ES") p+=10
-              print p "\t" $2 }' | sort -t$'\t' -k1,1nr | head -1 | cut -f2)"
+              if (ok) print $1 "\t" $2 }' | puntuar | head -1 | cut -f2)"
         if [ -z "$VOZ" ]; then echo "No encontré una voz en español que se llame «$pedido». Estas son las que hay:"; "$0" voces; exit 1; fi ;;
     esac
     guardar; echo "Voz: $(nombre_voz "$(voz_actual)")"; hablar "Esta es mi nueva voz." ;;
@@ -139,8 +182,8 @@ case "${1:-}" in
     # Palabras por minuto (185 = normal) o un multiplicador como en otros lectores: «1.2x», «1,2», «x1.5».
     v="$(printf '%s' "${2:-185}" | tr ',' '.' | tr -d 'xX ')"
     VELOCIDAD="$(awk -v v="$v" 'BEGIN { if (v+0 <= 0) v=185; else if (v+0 < 5) v=v*185; v=int(v+0.5); if (v<120) v=120; if (v>300) v=300; print v }')"
-    guardar; echo "Velocidad: $VELOCIDAD palabras por minuto ($(awk -v v="$VELOCIDAD" 'BEGIN { printf "%.2fx", v/185 }'))"
+    guardar; echo "Velocidad: $VELOCIDAD palabras por minuto ($(x_vel))"
     hablar "Así sueno a esta velocidad." ;;
-  "")        echo "Uso: voz-natural-decir 'frase' | encender | apagar | probar | voces | elegir 'voz' | velocidad 185" >&2; exit 1 ;;
+  "")        echo "Uso: voz-natural-decir 'frase' | encender | apagar | probar | voces | elegir 'voz' | velocidad 1.2x" >&2; exit 1 ;;
   *)         hablar "$*" ;;
 esac

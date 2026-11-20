@@ -1,12 +1,12 @@
 ---
 name: modo-voz
-description: Tu mano derecha te habla. Cuenta en voz alta, con la voz de tu Mac, el resumen de lo que te responde por escrito, como un colega, para que casi no tengas que leer. Úsala SIEMPRE que el usuario pida voz con cualquier palabra («usa el modo voz», «modo voz», «háblame», «léeme el resumen», «dímelo en voz», «resumen en voz») y para apagarla («apaga el modo voz», «ya no me hables», «sin voz»).
+description: Tu mano derecha te habla. Cuenta en voz alta, con la voz de tu computadora (Mac o Windows), el resumen de lo que te responde por escrito, como un colega, para que casi no tengas que leer. Úsala SIEMPRE que el usuario pida voz con cualquier palabra («usa el modo voz», «modo voz», «háblame», «léeme el resumen», «dímelo en voz», «resumen en voz») y para apagarla («apaga el modo voz», «ya no me hables», «sin voz»).
 allowed-tools: Bash(voz-natural-decir *)
 ---
 
 # Modo voz: te cuento en voz lo que te escribo
 
-Tu Mac dice en voz alta lo que le mandas con el script de abajo. **Lo escrito no cambia nada:** mismo razonamiento,
+Tu computadora dice en voz alta lo que le mandas con el script de abajo. **Lo escrito no cambia nada:** mismo razonamiento,
 mismo detalle, mismas tablas. La voz es un complemento encima: el resumen narrado de tu respuesta, para que el usuario
 entienda todo casi sin leer y vaya a lo escrito solo por el detalle.
 
@@ -60,8 +60,9 @@ Mientras está encendido, cada mensaje del usuario te llega con un recordatorio 
   el plugin), hasta que pida otra cosa. No hace falta volver a configurarlo: díselo la primera vez que cambie algo.
 - Al encender el modo voz, el script dice qué voz y velocidad quedaron. Si la voz es «elegida automáticamente», cuéntale
   en tu frase que puede pedir otra cuando quiera («si te gusta otra voz o más velocidad, dímelo y la dejo fija»).
-- Si pide una voz que no tiene, explícale cómo bajarla: Ajustes del Sistema › Accesibilidad › Lectura y voz › botón ⓘ
-  junto a «Voz del sistema» › Voz › buscar el nombre › la nube junto a la versión «(mejorada)».
+- Si pide una voz que no tiene, explícale cómo bajarla. **Mac:** Ajustes del Sistema › Accesibilidad › Lectura y voz ›
+  botón ⓘ junto a «Voz del sistema» › Voz › buscar el nombre › la nube junto a la versión «(mejorada)». **Windows:**
+  Configuración › Hora e idioma › Voz › Administrar voces › Agregar voces › Español (México). Siri solo existe en Mac.
 
 ## En cada respuesta
 
@@ -86,5 +87,5 @@ La voz no lee la respuesta: la cuenta ya digerida, como una persona que trabajó
 - Para oírse, no para leerse: de tú, en español natural, tono de conversación. Sin código, rutas, comandos, siglas
   técnicas, tablas ni enlaces. Números solo si importan, dichos como se hablan.
 - **Respaldo escrito, siempre:** la voz nunca reemplaza el texto. Todo lo que dices en voz queda también en tu
-  respuesta escrita. Si la Mac falla o el usuario no estaba escuchando, no se pierde nada.
+  respuesta escrita. Si la computadora falla o el usuario no estaba escuchando, no se pierde nada.
 - Sin relleno («¡Excelente pregunta!») y sin anunciar lo que vas a decir.

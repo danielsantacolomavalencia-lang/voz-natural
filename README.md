@@ -7,6 +7,7 @@ importante y qué necesita de ti. Lo escrito no cambia: queda igual, para cuando
 - Usa la voz que ya trae tu Mac (la mejor: **Siri**). **No instala nada más**, no manda nada a internet y no gasta
   saldo en ningún servicio de voz.
 - Tú le hablas con el **micrófono** de Claude Code; ella te responde en voz.
+- **¿Windows?** Hay una versión en prueba: [WINDOWS.md](WINDOWS.md). Esta guía es la de Mac.
 
 ## Instalar: copia y pega esto en tu mano derecha (Claude Code)
 
@@ -97,4 +98,4 @@ que pidas otra cosa. También sirve `/voz-natural:probar`, que dice una frase de
   `~/.claude/voz-natural/voz.log`.
 - **Suena robótica:** pon Siri como voz del sistema (arriba).
 
-Hecho para la clase Mano Derecha. Solo Mac por ahora.
+Hecho para la clase Mano Derecha. Mac probado; Windows en prueba ([WINDOWS.md](WINDOWS.md)).
