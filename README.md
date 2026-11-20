@@ -13,6 +13,9 @@ importante y qué necesita de ti. Lo escrito no cambia: queda igual, para cuando
 ```text
 Instálame el plugin «Voz natural» de la clase Mano Derecha, paso a paso, y cuéntame cada paso en una frase:
 
+0. Revisa que la Mac tenga git (Claude Code lo usa para descargar el plugin de GitHub): corre `xcode-select -p`.
+   Si falla, corre `xcode-select --install`, dime que acepte la ventana de «herramientas de línea de comandos»
+   (gratis, unos minutos) y espera a que te diga «listo».
 1. Busca la orden de Claude Code: usa `command -v claude`; si no existe, usa la que trae la app de escritorio:
    ls -t "$HOME/Library/Application Support/Claude/claude-code"/*/*/claude.app/Contents/MacOS/claude | head -1
 2. Con esa orden, instala el plugin:
@@ -88,6 +91,7 @@ que pidas otra cosa. También sirve `/voz-natural:probar`, que dice una frase de
 
 ## Si algo falla
 
+- **Error al descargar de GitHub («git not found»):** falta git; corre `xcode-select --install` y acepta la ventana.
 - **Te pide permiso cada vez que habla:** falta el paso 3 de la instalación (el permiso `Bash(voz-natural-decir *)`).
 - **No suena:** sube el volumen y escribe `/voz-natural:probar`. El registro de lo que dijo está en
   `~/.claude/voz-natural/voz.log`.
