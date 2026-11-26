@@ -46,6 +46,15 @@ juntos. Si responde «SIN VOZ», dilo por escrito en una línea y sigue.
 
 Mientras está encendido, cada mensaje del usuario te llega con un recordatorio invisible «[Modo voz encendido]».
 
+## Solo habla el chat donde el usuario la encendió
+
+- **El modo voz es de cada chat.** Encenderlo aquí no hace hablar a otros chats: ni al que abrió este, ni a los que
+  este abra, ni a los ayudantes (subagentes). Si el usuario quiere voz en otro chat, la enciende allá.
+- **Sin el recordatorio «[Modo voz encendido]» no hables**, salvo que el usuario te pida en este mismo mensaje
+  «léeme el resumen» o «dímelo en voz». Un informe o un mensaje que te llega de otro chat no es un pedido de voz.
+- **Si eres un ayudante** (te lanzó otro chat para una tarea), nunca uses la voz: quien habla es el chat que el usuario
+  tiene delante.
+
 ## Cambiar la voz o la velocidad
 
 - **«¿Qué voces tengo?»**: `voz-natural-decir voces`

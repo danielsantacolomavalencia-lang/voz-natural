@@ -9,6 +9,10 @@ importante y qué necesita de ti. Lo escrito no cambia: queda igual, para cuando
 - Tú le hablas con el **micrófono** de Claude Code; ella te responde en voz.
 - **¿Windows?** Hay una versión en prueba: [WINDOWS.md](WINDOWS.md). Esta guía es la de Mac.
 
+**¿Ya lo tienes? Actualízalo:** dile a tu mano derecha «actualiza el plugin voz-natural con
+`claude plugin marketplace update mano-derecha` y `claude plugin update voz-natural@mano-derecha`», y luego cierra y
+vuelve a abrir Claude (⌘Q).
+
 ## Instalar: copia y pega esto en tu mano derecha (Claude Code)
 
 ```text
@@ -46,11 +50,15 @@ claude plugin install voz-natural --marketplace danielsantacolomavalencia-lang/v
 
 | Le dices | Qué pasa |
 |---|---|
-| «Usa el modo voz» | Desde ahí te cuenta en voz cada respuesta, hasta que lo apagues |
+| «Usa el modo voz» | Desde ahí te cuenta en voz cada respuesta **de ese chat**, hasta que lo apagues |
 | «Léeme el resumen» | Solo esa respuesta, en voz |
 | «Apaga el modo voz» | Deja de hablar. Lo escrito sigue igual |
 
 **Para callarla:** presiona **Esc**, o escríbele o díctale otro mensaje: la voz se calla al instante.
+
+**Cada chat, su voz:** solo habla el chat donde encendiste el modo voz. Si ese chat abre otro chat o le pasa trabajo a un
+ayudante, ellos no hablan; y si trabajas en un chat que abrió otro, el de atrás tampoco habla. ¿Quieres voz en otro chat?
+Díselo ahí también.
 
 ## La mejor voz: Siri (gratis, 3 minutos)
 
@@ -96,7 +104,9 @@ que pidas otra cosa. También sirve `/voz-natural:probar`, que dice una frase de
   decirla con la orden `voz-natural-decir`, que usa `say`, la voz de tu Mac, justo antes de mostrarte lo escrito.
 - Mientras el modo voz está encendido, cada mensaje tuyo le llega con un recordatorio invisible para que no se le
   olvide hablarte. No ves ningún ícono ni texto extra.
-- Tu voz, tu velocidad y si el modo voz está encendido se guardan en `~/.claude/voz-natural/`.
+- Tu voz, tu velocidad y tu país se guardan en `~/.claude/voz-natural/` y valen en todos tus chats. El modo voz
+  encendido, en cambio, es de cada chat (desde la versión 1.3.0; antes uno lo encendía para todos y hablaban dos chats
+  a la vez).
 - El resumen hablado agrega unas pocas líneas a cada respuesta: es todo lo que suma al uso de tu plan.
 
 ## Si algo falla
@@ -106,5 +116,7 @@ que pidas otra cosa. También sirve `/voz-natural:probar`, que dice una frase de
 - **No suena:** sube el volumen y escribe `/voz-natural:probar`. El registro de lo que dijo está en
   `~/.claude/voz-natural/voz.log`.
 - **Suena robótica:** pon Siri como voz del sistema (arriba).
+- **Habla dos veces o habla un chat que no es este:** actualiza el plugin (arriba, «¿Ya lo tienes?»); desde la 1.3.0
+  solo habla el chat donde lo encendiste.
 
 Hecho para la clase Mano Derecha. Mac probado; Windows en prueba ([WINDOWS.md](WINDOWS.md)).

@@ -6,13 +6,16 @@
 # permiso, `Bash(voz-natural-decir *)`, evita que pida permiso cada vez que habla).
 #
 #   voz-natural-decir 'frase'                      dice la frase y ESPERA a que termine (lo que oyes y lo que ves van juntos)
-#   voz-natural-decir encender | apagar            el modo voz de la skill (para el recordatorio invisible de cada mensaje)
+#   voz-natural-decir encender | apagar            el modo voz de la skill, SOLO en este chat (para el recordatorio invisible)
 #   voz-natural-decir probar | voces               prueba la voz y muestra las voces en español
 #   voz-natural-decir elegir 'Nombre de la voz'    usar otra voz («siri», «auto» o un nombre a medias)
 #   voz-natural-decir velocidad 1.2x               velocidad (1x es lo normal; también palabras por minuto, 185 = 1x)
 #   voz-natural-decir pais ES                      el país del acento («auto»: el de la región de la computadora)
-#   voz-natural-decir recordatorio                 (gancho UserPromptSubmit) calla la voz anterior y, con el modo voz
-#                                                  encendido, le recuerda a Claude que siga hablando
+#   voz-natural-decir recordatorio                 (gancho UserPromptSubmit) calla la voz anterior de este chat y, si el
+#                                                  modo voz está encendido EN ESTE CHAT, le recuerda a Claude que hable
+#
+# Cada chat tiene su propio modo voz (1.3.0): encenderlo en un chat no hace hablar a los demás (ni al chat que lo abrió,
+# ni a los que él abra). El chat se reconoce por CLAUDE_CODE_SESSION_ID, que Claude Code les da al gancho y a la terminal.
 #
 # Solo usa lo que ya trae la computadora. No instala nada ni manda nada a internet.
 
@@ -21,12 +24,24 @@ set -u
 DATA="${VOZ_DATOS:-$HOME/.claude/voz-natural}"
 mkdir -p "$DATA" 2>/dev/null
 CONF="$DATA/config"
-PID="$DATA/habla.pid"
 
-ESTADO="apagado"; VOZ=""; VELOCIDAD="185"; PAIS=""
+VOZ=""; VELOCIDAD="185"; PAIS=""
 # shellcheck disable=SC1090
 [ -f "$CONF" ] && . "$CONF"
-guardar() { printf 'ESTADO=%q\nVOZ=%q\nVELOCIDAD=%q\nPAIS=%q\n' "$ESTADO" "$VOZ" "$VELOCIDAD" "$PAIS" > "$CONF"; }
+unset ESTADO   # hasta 1.2.0 el encendido era uno para todos los chats (ESTADO en config): ya no se usa
+# La voz, la velocidad y el país son tuyos y valen en todos los chats; el encendido es de cada chat (abajo).
+guardar() { printf 'VOZ=%q\nVELOCIDAD=%q\nPAIS=%q\n' "$VOZ" "$VELOCIDAD" "$PAIS" > "$CONF"; }
+
+# ── Cada chat, su modo voz ──────────────────────────────────────────────────────────────────────────────────────────
+# El chat se reconoce por su número de sesión. Si Claude Code es tan viejo que no lo da, todo cae en «general» (como
+# antes de 1.3.0: un encendido para todos).
+SESIONES="$DATA/sesiones"
+mkdir -p "$SESIONES" 2>/dev/null
+chat_de() { printf '%s' "$1" | tr -cd 'A-Za-z0-9_-' | cut -c1-80; }
+CHAT="$(chat_de "${CLAUDE_CODE_SESSION_ID:-}")"; [ -z "$CHAT" ] && CHAT="general"
+marca_chat() { echo "$SESIONES/$CHAT.voz"; }
+voz_encendida() { [ -f "$(marca_chat)" ] || [ -f "$SESIONES/general.voz" ]; }
+PID="$SESIONES/$CHAT.pid"   # la voz que está sonando en este chat (Esc o un mensaje nuevo de este chat la callan)
 
 case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) WINDOWS=1; EQUIPO="computadora" ;; *) WINDOWS=0; EQUIPO="Mac" ;; esac
 
@@ -119,7 +134,7 @@ hablar() { # $1 = frase; espera a que termine
   local frase="$1" voz archivo=""
   [ -z "$frase" ] && return 0
   voz="$(voz_actual)"
-  echo "$(date '+%Y-%m-%d %H:%M:%S') · ${#frase} letras · $(nombre_voz "$voz")" >> "$DATA/voz.log" 2>/dev/null
+  echo "$(date '+%Y-%m-%d %H:%M:%S') · chat ${CHAT:0:8} · ${#frase} letras · $(nombre_voz "$voz")" >> "$DATA/voz.log" 2>/dev/null
   callar
   if [ "$WINDOWS" = 1 ]; then
     # La frase va en un archivo (así PowerShell no toca comillas ni acentos). Velocidad: 1x = 0; 1.2x = 2 (de -10 a 10).
@@ -151,15 +166,25 @@ x_vel() { awk -v v="$VELOCIDAD" 'BEGIN { printf "%.2fx", v/185 }'; }
 
 case "${1:-}" in
   recordatorio)
-    cat > /dev/null
-    callar                                        # si le estabas hablando, se calla: ya te está respondiendo
-    [ "$ESTADO" = "encendido" ] && echo "$RECORDATORIO"
+    # El gancho recibe en su entrada el número de sesión del chat («session_id»): manda sobre la variable.
+    s="$(chat_de "$(tr -d '\r\n' | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')")"
+    [ -n "$s" ] && CHAT="$s" && PID="$SESIONES/$CHAT.pid"
+    callar                                        # si este chat te estaba hablando, se calla: ya te está respondiendo
+    if voz_encendida; then
+      touch "$(marca_chat)" 2>/dev/null || true   # un chat en uso no caduca
+      echo "$RECORDATORIO"
+    fi
     exit 0 ;;
-  encender) ESTADO="encendido"; guardar; echo "Modo voz encendido. Voz: $(nombre_voz "$(voz_actual)") ($(quien_eligio); $(de_donde)) · velocidad: $(x_vel)" ;;
-  apagar)   ESTADO="apagado"; guardar; callar; echo "Modo voz apagado. Lo escrito sigue igual." ;;
+  encender)
+    rm -f "$SESIONES/general.voz"   # un encendido viejo «para todos» no debe hacer hablar a los demás chats
+    touch "$(marca_chat)"
+    # Los encendidos de chats que no se usan hace más de 30 días se olvidan (no hablan, solo ocupan lugar).
+    find "$SESIONES" -type f \( -name '*.voz' -o -name '*.pid' \) -mtime +30 -exec rm -f {} + 2>/dev/null
+    echo "Modo voz encendido en este chat (los demás chats siguen callados). Voz: $(nombre_voz "$(voz_actual)") ($(quien_eligio); $(de_donde)) · velocidad: $(x_vel)" ;;
+  apagar)   rm -f "$(marca_chat)" "$SESIONES/general.voz"; callar; echo "Modo voz apagado en este chat. Lo escrito sigue igual." ;;
   probar)
     v="$(voz_actual)"
-    echo "Voz: $(nombre_voz "$v") ($(quien_eligio); $(de_donde)) · velocidad: $(x_vel) · modo voz: $ESTADO"
+    echo "Voz: $(nombre_voz "$v") ($(quien_eligio); $(de_donde)) · velocidad: $(x_vel) · modo voz en este chat: $(voz_encendida && echo encendido || echo apagado)"
     [ -z "$v" ] && [ -z "$(siri_del_sistema)" ] && echo "No encontré voces en español. $(como_bajar_voces)"
     hablar "Hola, soy tu mano derecha. Así te voy a contar lo que hago, para que casi no tengas que leer." ;;
   voces)

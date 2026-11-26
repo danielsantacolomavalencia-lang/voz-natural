@@ -10,6 +10,10 @@ programas las usen. Todo lo demás funciona igual que en Mac: «usa el modo voz�
 
 **Requisito:** Git para Windows. Claude Code lo usa para descargar el plugin y para correr la voz (por Git Bash).
 
+**¿Ya lo tienes? Actualízalo:** dile a tu mano derecha «actualiza el plugin voz-natural con
+`claude plugin marketplace update mano-derecha` y `claude plugin update voz-natural@mano-derecha`», y luego cierra y
+vuelve a abrir Claude. Desde la 1.3.0, solo habla el chat donde encendiste el modo voz.
+
 ## Instalar: copia y pega esto en tu mano derecha (Claude Code en Windows)
 
 ```text
@@ -45,5 +49,6 @@ cada paso en una frase:
 | Esc la calla | Presiona Esc mientras habla | Anotar qué pasó para revisarlo |
 | Un mensaje nuevo la calla | Escríbele mientras habla | Anotar qué pasó |
 | Velocidad | «velocidad 1.2x» | Anotar qué pasó |
+| Solo habla un chat | Enciende el modo voz en un chat y escríbele a otro | Si el otro habla, anotar qué pasó |
 
 El registro de lo que dijo está en `C:\Users\<usuario>\.claude\voz-natural\voz.log`.
