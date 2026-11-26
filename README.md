@@ -27,9 +27,12 @@ Instálame el plugin «Voz natural» de la clase Mano Derecha, paso a paso, y cu
 4. Revisa si mi voz del sistema ya es Siri con:
    defaults read com.apple.Accessibility SpokenContentDefaultVoiceSelectionsByLanguage
    Si no aparece «com.apple.siri», explícame paso a paso cómo ponerla: Ajustes del Sistema › Accesibilidad ›
-   Lectura y voz › Voz del sistema › Siri › Voz 2 (si pide descargarla, que acepte; son unos 200 MB).
+   Lectura y voz › Voz del sistema › Siri › Voz 2 (si pide descargarla, que acepte; son unos 200 MB). Pregúntame
+   de qué país soy: la voz de Siri debe ser del español de mi país (por ejemplo, «Español (España)» si vivo en España).
    Espera a que te diga «listo».
-5. Al terminar, dime que abra una conversación nueva y escriba «usa el modo voz».
+5. Pregúntame de qué país soy y corre `voz-natural-decir pais <dos letras>` (ES, MX, CO…) para que la voz tenga mi
+   acento aunque la región de mi computadora diga otra cosa.
+6. Al terminar, dime que abra una conversación nueva y escriba «usa el modo voz».
 ```
 
 ¿Prefieres hacerlo a mano? En la app de escritorio, pestaña **Code**: botón **+** › **Add plugins** (agrega primero el
@@ -54,13 +57,18 @@ claude plugin install voz-natural --marketplace danielsantacolomavalencia-lang/v
 Las voces de fábrica suenan robóticas. Las de **Siri** son las más naturales de la Mac:
 
 1. **Ajustes del Sistema › Accesibilidad › Lectura y voz** (en versiones anteriores, «Contenido leído»).
-2. En **Voz del sistema**, elige **Siri** y una de sus voces (por ejemplo, **Voz 2**). Si te pide descargarla, acepta.
+2. En **Voz del sistema**, elige **Siri** y una de sus voces (por ejemplo, **Voz 2**), del español de tu país
+   (si vives en España, **Español (España)**). Si te pide descargarla, acepta.
 3. Listo: el plugin la usa sola. (Siri solo funciona así, como voz del sistema; no se puede elegir por nombre.)
 
 ¿Prefieres otra? Junto a **Voz del sistema**, el botón **ⓘ** › **Voz** › busca por ejemplo **Paulina** y toca la
 **nube** junto a **Paulina (mejorada)**.
 
 ## Cambiar la voz o la velocidad
+
+**El acento sale de tu país.** Sin que hagas nada, el plugin mira la región de tu computadora (Mac: Ajustes del Sistema ›
+General › Idioma y región; Windows: Configuración › Hora e idioma › Región) y prefiere una voz de ese país: en España,
+Mónica o Marisol; en México, Paulina. Si no hay voz de tu país, usa la del español más cercano.
 
 Pídeselo en el chat, con tus palabras:
 
@@ -70,6 +78,7 @@ Pídeselo en el chat, con tus palabras:
 | «Usa la voz de Siri» | Usa Siri (si es la voz del sistema) |
 | «Usa la voz de Mónica» | Cambia a esa voz (basta el nombre; si hay versión mejorada, usa esa) y se presenta |
 | «Elige tú la mejor» | Vuelve a la elección automática |
+| «Soy de España» / «usa acento de Colombia» | Prefiere las voces de ese país (si no hay, una del español más cercano) |
 | «Habla más rápido» / «más despacio» | Cambia la velocidad poco a poco |
 | «Velocidad 1.2x» | Esa velocidad exacta (1x es lo normal) |
 

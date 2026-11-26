@@ -54,6 +54,9 @@ Mientras está encendido, cada mensaje del usuario te llega con un recordatorio 
   son la «voz del sistema»; si no lo son, el script dice cómo ponerla y tú se lo explicas.
 - **«Usa la voz de Mónica»** (o «cambia a Paulina mejorada»): `voz-natural-decir elegir 'Mónica'`. Acepta el nombre a medias
   y se queda con la mejor versión que haya; la nueva voz se presenta sola. «Elige tú la mejor» → `voz-natural-decir elegir auto`.
+- **«Soy de España»** (o «usa acento de Colombia», «pon la voz de México»): `voz-natural-decir pais ES` (dos letras: ES,
+  MX, CO, AR, CL…; «auto» vuelve a la región de la computadora). Sin pedirlo, el script ya prefiere las voces del país de
+  la región de su computadora; si esa región no es su país, esto lo arregla. Si eligió una voz por nombre, esa manda.
 - **«Habla más rápido / más despacio»**: `voz-natural-decir velocidad 1.1x` (o `0.9x`), un paso a la vez. **«Velocidad 1.2x»**
   (o «a 1.5»): `voz-natural-decir velocidad 1.2x`. También acepta palabras por minuto (185 es lo normal = 1x).
 - **Lo que elige se queda guardado para siempre** (en todas sus conversaciones, aunque cierre Claude o se actualice
@@ -62,7 +65,7 @@ Mientras está encendido, cada mensaje del usuario te llega con un recordatorio 
   en tu frase que puede pedir otra cuando quiera («si te gusta otra voz o más velocidad, dímelo y la dejo fija»).
 - Si pide una voz que no tiene, explícale cómo bajarla. **Mac:** Ajustes del Sistema › Accesibilidad › Lectura y voz ›
   botón ⓘ junto a «Voz del sistema» › Voz › buscar el nombre › la nube junto a la versión «(mejorada)». **Windows:**
-  Configuración › Hora e idioma › Voz › Administrar voces › Agregar voces › Español (México). Siri solo existe en Mac.
+  Configuración › Hora e idioma › Voz › Administrar voces › Agregar voces › Español de su país. Siri solo existe en Mac.
 
 ## En cada respuesta
 

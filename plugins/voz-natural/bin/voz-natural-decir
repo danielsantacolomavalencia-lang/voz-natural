@@ -10,6 +10,7 @@
 #   voz-natural-decir probar | voces               prueba la voz y muestra las voces en español
 #   voz-natural-decir elegir 'Nombre de la voz'    usar otra voz («siri», «auto» o un nombre a medias)
 #   voz-natural-decir velocidad 1.2x               velocidad (1x es lo normal; también palabras por minuto, 185 = 1x)
+#   voz-natural-decir pais ES                      el país del acento («auto»: el de la región de la computadora)
 #   voz-natural-decir recordatorio                 (gancho UserPromptSubmit) calla la voz anterior y, con el modo voz
 #                                                  encendido, le recuerda a Claude que siga hablando
 #
@@ -22,10 +23,10 @@ mkdir -p "$DATA" 2>/dev/null
 CONF="$DATA/config"
 PID="$DATA/habla.pid"
 
-ESTADO="apagado"; VOZ=""; VELOCIDAD="185"
+ESTADO="apagado"; VOZ=""; VELOCIDAD="185"; PAIS=""
 # shellcheck disable=SC1090
 [ -f "$CONF" ] && . "$CONF"
-guardar() { printf 'ESTADO=%q\nVOZ=%q\nVELOCIDAD=%q\n' "$ESTADO" "$VOZ" "$VELOCIDAD" > "$CONF"; }
+guardar() { printf 'ESTADO=%q\nVOZ=%q\nVELOCIDAD=%q\nPAIS=%q\n' "$ESTADO" "$VOZ" "$VELOCIDAD" "$PAIS" > "$CONF"; }
 
 case "$(uname -s 2>/dev/null)" in MINGW*|MSYS*|CYGWIN*) WINDOWS=1; EQUIPO="computadora" ;; *) WINDOWS=0; EQUIPO="Mac" ;; esac
 
@@ -47,10 +48,24 @@ lista_voces() {
       !vista[loc "\t" n]++ { print loc "\t" n }'
   fi
 }
-# Puntaje de cada voz: Premium > Mejorada (Enhanced) > el resto; México > EE. UU. > España; Paulina, Mónica, Sabina.
+# El país del acento: el que eligió el usuario (`pais ES`) o el de la región de su computadora (Mac: Ajustes › General ›
+# Idioma y región; Windows: Configuración › Hora e idioma › Región). Dos letras («ES», «MX», «CO»…) o nada.
+pais_sistema() {
+  local r
+  if [ "$WINDOWS" = 1 ]; then r="$(powershell_ '[System.Globalization.RegionInfo]::CurrentRegion.TwoLetterISORegionName' 2>/dev/null | tr -d '\r' | head -1)"
+  else r="$(defaults read -g AppleLocale 2>/dev/null | sed -E 's/@.*//' | awk -F'_' '{ print $2 }')"; fi
+  printf '%s' "$r" | tr '[:lower:]' '[:upper:]' | grep -E '^[A-Z]{2}$'
+}
+pais_actual() { if [ -n "$PAIS" ]; then echo "$PAIS"; else pais_sistema; fi; }
+nombre_pais() { case "$1" in ES) echo "España" ;; MX|"") echo "México" ;; US) echo "Estados Unidos" ;; AR) echo "Argentina" ;; CO) echo "Colombia" ;;
+  CL) echo "Chile" ;; PE) echo "Perú" ;; VE) echo "Venezuela" ;; EC) echo "Ecuador" ;; GT) echo "Guatemala" ;; *) echo "$1" ;; esac; }
+# Puntaje de cada voz: primero el acento de su país (a quien vive en España, una voz de España); luego Premium >
+# Mejorada (Enhanced) > el resto; sin voz de su país, México > EE. UU. > España; Paulina, Mónica, Sabina.
 puntuar() {
-  awk -F'\t' '{ n=$2; p=100
+  awk -F'\t' -v pais="$(pais_actual)" '{ n=$2; p=100
     if (n ~ /Premium/) p=400; else if (n ~ /(Enhanced|Mejorada|mejorada|Natural)/) p=300
+    if (pais != "" && $1 == "es_" pais) p+=1000
+    else if (pais != "" && pais != "ES" && $1 != "es_ES") p+=500   # en América, sin voz de su país, una latina antes que una de España
     if ($1=="es_MX") p+=30; else if ($1=="es_US") p+=20; else if ($1=="es_ES") p+=10
     if (n ~ /(Paulina|Sabina)/) p+=5; else if (n ~ /M[oó]nica|Helena/) p+=4
     print p "\t" n }' | sort -t$'\t' -k1,1nr
@@ -87,9 +102,11 @@ quien_eligio() {
   else echo "tu voz elegida, $VOZ, ya no está en la $EQUIPO: uso la mejor que hay"; fi
 }
 como_bajar_voces() {
-  if [ "$WINDOWS" = 1 ]; then echo "Para agregar una voz en español: Configuración › Hora e idioma › Voz › Administrar voces › Agregar voces › Español (México)."
+  if [ "$WINDOWS" = 1 ]; then echo "Para agregar una voz en español: Configuración › Hora e idioma › Voz › Administrar voces › Agregar voces › Español ($(nombre_pais "$(pais_actual)"))."
   else echo "Para la mejor voz: Ajustes del Sistema › Accesibilidad › Lectura y voz › Voz del sistema › Siri."; fi
 }
+
+de_donde() { local p; p="$(pais_actual)"; if [ -z "$p" ]; then echo "sin país"; elif [ -n "$PAIS" ]; then echo "acento de $(nombre_pais "$p"), elegido"; else echo "acento de $(nombre_pais "$p"), por la región de tu $EQUIPO"; fi; }
 
 matar() { # detiene el proceso de la voz (en Windows, también el PowerShell de fondo)
   kill "$1" 2>/dev/null
@@ -138,11 +155,11 @@ case "${1:-}" in
     callar                                        # si le estabas hablando, se calla: ya te está respondiendo
     [ "$ESTADO" = "encendido" ] && echo "$RECORDATORIO"
     exit 0 ;;
-  encender) ESTADO="encendido"; guardar; echo "Modo voz encendido. Voz: $(nombre_voz "$(voz_actual)") ($(quien_eligio)) · velocidad: $(x_vel)" ;;
+  encender) ESTADO="encendido"; guardar; echo "Modo voz encendido. Voz: $(nombre_voz "$(voz_actual)") ($(quien_eligio); $(de_donde)) · velocidad: $(x_vel)" ;;
   apagar)   ESTADO="apagado"; guardar; callar; echo "Modo voz apagado. Lo escrito sigue igual." ;;
   probar)
     v="$(voz_actual)"
-    echo "Voz: $(nombre_voz "$v") ($(quien_eligio)) · velocidad: $(x_vel) · modo voz: $ESTADO"
+    echo "Voz: $(nombre_voz "$v") ($(quien_eligio); $(de_donde)) · velocidad: $(x_vel) · modo voz: $ESTADO"
     [ -z "$v" ] && [ -z "$(siri_del_sistema)" ] && echo "No encontré voces en español. $(como_bajar_voces)"
     hablar "Hola, soy tu mano derecha. Así te voy a contar lo que hago, para que casi no tengas que leer." ;;
   voces)
@@ -155,7 +172,7 @@ case "${1:-}" in
     else
       [ -z "$(lista_voces)" ] && como_bajar_voces
     fi
-    echo "Elegida: $(nombre_voz "$(voz_actual)")" ;;
+    echo "Elegida: $(nombre_voz "$(voz_actual)") · $(de_donde)" ;;
   elegir)
     # Acepta el nombre a medias («mónica», «paulina mejorada»): se queda con la mejor voz en español que lo contenga.
     # «automática» (o nada) vuelve a dejar que el plugin elija la mejor.
@@ -184,6 +201,14 @@ case "${1:-}" in
     VELOCIDAD="$(awk -v v="$v" 'BEGIN { if (v+0 <= 0) v=185; else if (v+0 < 5) v=v*185; v=int(v+0.5); if (v<120) v=120; if (v>300) v=300; print v }')"
     guardar; echo "Velocidad: $VELOCIDAD palabras por minuto ($(x_vel))"
     hablar "Así sueno a esta velocidad." ;;
-  "")        echo "Uso: voz-natural-decir 'frase' | encender | apagar | probar | voces | elegir 'voz' | velocidad 1.2x" >&2; exit 1 ;;
+  pais)
+    # El país del acento: «ES», «MX», «Colombia», «España»… o «auto» (el de la región de la computadora).
+    q="$(printf '%s' "${2:-auto}" | tr '[:lower:]' '[:upper:]' | sed 's/Á/A/g; s/É/E/g; s/Í/I/g; s/Ó/O/g; s/Ú/U/g; s/Ñ/N/g; s/ñ/N/g')"
+    case "$q" in AUTO|AUTOMATICA|AUTOMATICO|"") PAIS="" ;; ESPANA) PAIS="ES" ;; MEXICO) PAIS="MX" ;; COLOMBIA) PAIS="CO" ;;
+      ARGENTINA) PAIS="AR" ;; CHILE) PAIS="CL" ;; PERU) PAIS="PE" ;; "ESTADOS UNIDOS"|EEUU|USA) PAIS="US" ;;
+      [A-Z][A-Z]) PAIS="$q" ;; *) echo "No entendí el país «${2:-}». Usa dos letras (ES, MX, CO…) o «auto»." >&2; exit 1 ;; esac
+    guardar; echo "País: $(de_donde) · voz: $(nombre_voz "$(voz_actual)") ($(quien_eligio))"
+    [ -z "$VOZ" ] && hablar "Así sueno con este acento." ;;
+  "")        echo "Uso: voz-natural-decir 'frase' | encender | apagar | probar | voces | elegir 'voz' | velocidad 1.2x | pais ES" >&2; exit 1 ;;
   *)         hablar "$*" ;;
 esac

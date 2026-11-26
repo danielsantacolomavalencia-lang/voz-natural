@@ -30,8 +30,8 @@ cada paso en una frase:
 4. Revisa qué voces en español tengo con:
    powershell.exe -NoProfile -Command 'Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).GetInstalledVoices() | ForEach-Object { $_.VoiceInfo.Name + " " + $_.VoiceInfo.Culture }'
    Si no aparece ninguna «es-», explícame paso a paso: Configuración › Hora e idioma › Voz › Administrar voces ›
-   Agregar voces › Español (México). Si después sigue sin aparecer, Configuración › Hora e idioma › Idioma y región ›
-   Agregar un idioma › Español (México), con «Texto a voz» marcado. Espera a que te diga «listo» y vuelve a revisar.
+   Agregar voces › Español de tu país (España, México…). Si después sigue sin aparecer, Configuración › Hora e idioma › Idioma y región ›
+   Agregar un idioma › Español de tu país, con «Texto a voz» marcado. Espera a que te diga «listo» y vuelve a revisar.
 5. Al terminar, dime que abra una conversación nueva y escriba «usa el modo voz».
 ```
 
